@@ -25,11 +25,22 @@ function App() {
     // Fetch products
     const fetchProducts = async () => {
       try {
+        console.log('Fetching products from:', apiService.getProducts.toString());
         const response = await apiService.getProducts();
-        setProducts(response.data.products || []);
+        console.log('Products fetched:', response.data);
+        if (!response.data || !response.data.products) {
+          console.error('Invalid response format:', response.data);
+          setError('Invalid response format from server');
+          return;
+        }
+        setProducts(response.data.products);
       } catch (err) {
+        console.error('Error details:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status
+        });
         setError('Failed to fetch products');
-        console.error('Error fetching products:', err);
       } finally {
         setLoading(false);
       }
