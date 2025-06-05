@@ -26,7 +26,7 @@ function App() {
     const fetchProducts = async () => {
       try {
         const response = await apiService.getProducts();
-        setProducts(response.data.products);
+        setProducts(response.data.products || []);
       } catch (err) {
         setError('Failed to fetch products');
         console.error('Error fetching products:', err);
