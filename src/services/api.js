@@ -1,8 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// API Configuration
+const isDevelopment = process.env.NODE_ENV === 'development';
+const API_BASE_URL = isDevelopment 
+  ? 'http://localhost:5000/api'  // Development
+  : '/api';                      // Production - will use relative path
 
-// Create axios instance
+// Create axios instance with the correct base URL
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -10,7 +14,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-console.log("api test",API_BASE_URL);
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -47,8 +51,7 @@ export const apiService = {
   healthCheck: () => api.get('/health'),
   
   // Products
-  //getProducts: () => api.get('/products'),
-  getProducts: () => axios.get(`${API_BASE_URL}/api/products`),
+  getProducts: () => api.get('/products'),
   getProduct: (id) => api.get(`/products/${id}`),
   
   // Orders
