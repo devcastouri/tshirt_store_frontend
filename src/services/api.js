@@ -10,7 +10,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
+console.log("api test",API_BASE_URL);
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -47,7 +47,8 @@ export const apiService = {
   healthCheck: () => api.get('/health'),
   
   // Products
-  getProducts: () => api.get('/products'),
+  //getProducts: () => api.get('/products'),
+  getProducts: () => axios.get(`${API_BASE_URL}/api/products`),
   getProduct: (id) => api.get(`/products/${id}`),
   
   // Orders
