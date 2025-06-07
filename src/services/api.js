@@ -51,10 +51,8 @@ export const apiService = {
   // Health check
   healthCheck: () => api.get('/health'),
   
-  // Products
-  getProducts: () => api.get(process.env.REACT_APP_API_URL + '/products'),
-  getProduct: (id) => api.get(`/products/${id}`),
-  
+  // Products(`${API_BASE}/api/products`)
+  getProducts: () => api.get(`${process.env.REACT_APP_API_URL}/products` ),  
   // Orders
   createOrder: (orderData) => api.post('/orders', orderData),
   getOrders: () => api.get('/orders'),
