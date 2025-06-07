@@ -52,7 +52,7 @@ export const apiService = {
   healthCheck: () => api.get('/health'),
   
   // Products
-  getProducts: () => api.get('/products'),
+  getProducts: () => api.get(process.env.REACT_APP_API_URL + '/products'),
   getProduct: (id) => api.get(`/products/${id}`),
   
   // Orders
