@@ -4,7 +4,7 @@ import axios from 'axios';
 const isDevelopment = process.env.NODE_ENV === 'development';
 const API_BASE_URL = isDevelopment 
   ? 'http://localhost:5000/api'  // Development
-  : '/api';                      // Production - will use relative path
+  : process.env.REACT_APP_API_URL || '/api';  // Production - use environment variable or relative path
 
 // Create axios instance with the correct base URL
 const api = axios.create({
@@ -13,6 +13,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true // Enable credentials for CORS
 });
 
 // Request interceptor
