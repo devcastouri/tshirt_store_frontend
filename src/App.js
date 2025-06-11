@@ -1,91 +1,104 @@
 import React, { useState, useEffect } from 'react';
-import { apiService } from './services/api';
-import config from './config/environment';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import Navigation from './components/Navigation';
+import Home from './pages/Home';
+import Products from './pages/Products';
+import ProductManagement from './pages/ProductManagement';
+import UserManagement from './pages/UserManagement';
+import Login from './pages/Login';
+import AdminDashboard from './pages/AdminDashboard';
+import DashboardHome from './pages/DashboardHome';
+import ProtectedRoute from './components/ProtectedRoute';
+import apiService from './services/api';
 import './App.css';
 
 function App() {
-  const [products, setProducts] = useState([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [backendStatus, setBackendStatus] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+
+  const checkAuth = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await apiService.getCurrentUser();
+        setIsAuthenticated(true);
+        setUserRole(response.data.user.role);
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(null);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
+      setUserRole(null);
+      localStorage.removeItem('token');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Test backend connection
-    const testConnection = async () => {
-      try {
-        const response = await apiService.healthCheck();
-        setBackendStatus('Connected');
-        console.log('Backend connected:', response.data);
-      } catch (err) {
-        setBackendStatus('Disconnected');
-        console.error('Backend connection failed:', err);
-      }
-    };
-
-    // Fetch products
-    const fetchProducts = async () => {
-      try {
-        console.log('Fetching products from:', apiService.getProducts.toString());
-        const response = await apiService.getProducts();
-        console.log('Products fetched:', response.data);
-        if (!response.data || !response.data.products) {
-          console.error('Invalid response format:', response.data);
-          setError('Invalid response format from server');
-          return;
-        }
-        setProducts(response.data.products);
-      } catch (err) {
-        console.error('Error details:', {
-          message: err.message,
-          response: err.response?.data,
-          status: err.response?.status
-        });
-        setError('Failed to fetch products');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    testConnection();
-    fetchProducts();
+    checkAuth();
   }, []);
 
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>T-Shirt Store</h1>
-        <div className="status-info">
-          <p>Environment: {config.environment}</p>
-        <p>API URL: {config.apiUrl}</p>
-          <p>Backend Status: 
-            <span className={`status ${backendStatus?.toLowerCase()}`}>
-              {backendStatus || 'Checking...'}
-            </span>
-          </p>
-        </div>
-      </header>
+  const handleLogin = async (credentials) => {
+    try {
+      const response = await apiService.login(credentials);
+      localStorage.setItem('token', response.data.session.access_token);
+      await checkAuth(); // Refresh auth state after login
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  };
 
-      <main className="main-content">
-        {loading ? (
-          <p>Loading products...</p>
-        ) : error ? (
-          <p className="error">{error}</p>
-        ) : (
-        <div className="products-grid">
-            <h2>Our T-Shirts</h2>
-          {products.map(product => (
-            <div key={product.id} className="product-card">
-              <h3>{product.name}</h3>
-              <p>{product.description}</p>
-              <p className="price">${product.price}</p>
-              <p>Sizes: {product.sizes.join(', ')}</p>
-              <p>Colors: {product.colors.join(', ')}</p>
-            </div>
-          ))}
-        </div>
-        )}
-      </main>
-    </div>
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+      localStorage.removeItem('token');
+      setIsAuthenticated(false);
+      setUserRole(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Router>
+      <div className="app">
+        <Navigation 
+          isAuthenticated={isAuthenticated} 
+          userRole={userRole}
+          onLogout={handleLogout} 
+        />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/login" element={
+              isAuthenticated ? <Navigate to="/admin" replace /> : 
+              <Login onLogin={handleLogin} />
+            } />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute isAuthenticated={isAuthenticated} userRole={userRole}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }>
+              <Route index element={<DashboardHome />} />
+              <Route path="products" element={<ProductManagement />} />
+              <Route path="users" element={<UserManagement />} />
+            </Route>
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 
